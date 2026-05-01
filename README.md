@@ -258,10 +258,17 @@ Run locally:
 go run ./cmd/diary --help
 ```
 
+Show the version:
+
+```bash
+diary --version
+diary -v
+```
+
 Build:
 
 ```bash
 go build -o bin/diary ./cmd/diary
 ```
 
-Release builds are created by GitHub Actions when a `v*` tag is pushed.
+Release builds are created by GitHub Actions when a `v*` tag is pushed. Local builds report `dev`; release builds report the tag.

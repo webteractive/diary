@@ -51,3 +51,34 @@ func TestRecordListAndGet(t *testing.T) {
 		t.Fatalf("expected get context, got %q", out.String())
 	}
 }
+
+func TestRootHelpIncludesBannerAndVersionFlag(t *testing.T) {
+	var out bytes.Buffer
+	cmd := New(strings.NewReader(""), &out, &bytes.Buffer{})
+	cmd.SetArgs([]string{"--help"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	output := out.String()
+	for _, expected := range []string{"diary", "local AI context", "-v, --version"} {
+		if !strings.Contains(output, expected) {
+			t.Fatalf("expected help to include %q, got %q", expected, output)
+		}
+	}
+}
+
+func TestVersionFlags(t *testing.T) {
+	for _, args := range [][]string{{"--version"}, {"-v"}} {
+		var out bytes.Buffer
+		cmd := New(strings.NewReader(""), &out, &bytes.Buffer{})
+		cmd.SetArgs(args)
+		if err := cmd.Execute(); err != nil {
+			t.Fatal(err)
+		}
+
+		if got, want := out.String(), "diary version dev\n"; got != want {
+			t.Fatalf("expected %q for args %v, got %q", want, args, got)
+		}
+	}
+}
