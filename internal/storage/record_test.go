@@ -27,6 +27,12 @@ func TestCreateRecordWritesRecordLatestAndIndex(t *testing.T) {
 	if record.ID == "" || record.Hash == "" {
 		t.Fatalf("expected id and hash, got %#v", record)
 	}
+	if strings.Contains(record.ID, "codex") || strings.Contains(record.ID, "unknown") {
+		t.Fatalf("expected record id to omit harness, got %q", record.ID)
+	}
+	if !strings.HasPrefix(record.ID, "2026-05-01T103000Z-") {
+		t.Fatalf("expected timestamp-prefixed record id, got %q", record.ID)
+	}
 	if !strings.HasPrefix(record.Hash, "sha256:") {
 		t.Fatalf("expected sha256 hash, got %q", record.Hash)
 	}

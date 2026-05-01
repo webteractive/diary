@@ -32,9 +32,6 @@ func CreateRecord(opts CreateRecordOptions) (Record, error) {
 	if opts.Type == "" {
 		opts.Type = "context"
 	}
-	if opts.Harness == "" {
-		opts.Harness = "unknown"
-	}
 	if opts.Now.IsZero() {
 		opts.Now = time.Now().UTC()
 	}
@@ -52,7 +49,7 @@ func CreateRecord(opts CreateRecordOptions) (Record, error) {
 	}
 
 	record := Record{
-		ID:        makeID(opts.Now, opts.Harness),
+		ID:        makeID(opts.Now),
 		Project:   projectName,
 		Type:      opts.Type,
 		Timestamp: opts.Now.UTC().Format(time.RFC3339),
@@ -102,8 +99,8 @@ func (record Record) hashFields() map[string]any {
 	}
 }
 
-func makeID(now time.Time, harness string) string {
-	return fmt.Sprintf("%s-%s-%s", now.UTC().Format("2006-01-02T150405Z"), slug(harness), randomSuffix())
+func makeID(now time.Time) string {
+	return fmt.Sprintf("%s-%s", now.UTC().Format("2006-01-02T150405Z"), randomSuffix())
 }
 
 func randomSuffix() string {
@@ -112,23 +109,4 @@ func randomSuffix() string {
 		return "000000"
 	}
 	return hex.EncodeToString(bytes[:])
-}
-
-func slug(value string) string {
-	value = strings.ToLower(strings.TrimSpace(value))
-	var b strings.Builder
-	lastDash := false
-	for _, r := range value {
-		ok := (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9')
-		if ok {
-			b.WriteRune(r)
-			lastDash = false
-			continue
-		}
-		if !lastDash {
-			b.WriteRune('-')
-			lastDash = true
-		}
-	}
-	return strings.Trim(b.String(), "-")
 }

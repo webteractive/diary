@@ -71,7 +71,7 @@ func (a app) recordCommand() *cobra.Command {
 
 	cmd.Flags().StringVar(&projectName, "project", "", "project name")
 	cmd.Flags().StringVar(&recordType, "type", "context", "record type")
-	cmd.Flags().StringVar(&harness, "harness", "unknown", "harness name")
+	cmd.Flags().StringVar(&harness, "harness", "", "optional harness name")
 	cmd.Flags().StringArrayVar(&files, "file", nil, "file reference")
 	cmd.Flags().StringArrayVar(&refs, "ref", nil, "context reference")
 	cmd.Flags().StringArrayVar(&tags, "tag", nil, "tag")

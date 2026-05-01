@@ -109,7 +109,7 @@ Retrieves prompt-ready context for the resolved project.
 ```bash
 diary get
 diary get --project campaign-builder
-diary get --id 2026-05-01T103000Z-codex-a7f3c9
+diary get --id 2026-05-01T103000Z-a7f3c9
 diary get --hash abc123
 diary get --root ~/Documents/work-diary
 diary get --json
