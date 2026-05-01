@@ -41,7 +41,7 @@ download() {
 
   if command -v curl >/dev/null 2>&1; then
     if [ "$dest" = "-" ]; then
-      curl -fsSL "$url" -w '%{url_effective}'
+      curl -fsSL -o /dev/null -w '%{url_effective}' "$url"
     else
       curl -fsSL "$url" -o "$dest"
     fi
