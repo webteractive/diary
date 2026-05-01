@@ -115,3 +115,47 @@ func TestResolveStoreRootOverrideUsesCustomUserRoot(t *testing.T) {
 		t.Fatalf("expected custom project map: %v", err)
 	}
 }
+
+func TestRenameProjectMovesMappedProjectDirectory(t *testing.T) {
+	diaryRoot := t.TempDir()
+	projectRoot := t.TempDir()
+	oldStore, err := resolveUserStore(diaryRoot, StoreOptions{
+		Resolution: project.Resolution{Name: "old-name", Root: projectRoot},
+		Now:        time.Date(2026, 5, 1, 10, 0, 0, 0, time.UTC),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(oldStore.Paths.RecordsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(oldStore.Paths.RecordsDir, "record.md"), []byte("record"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := RenameProject(diaryRoot, project.Resolution{Name: "new-name", Root: projectRoot}, time.Date(2026, 5, 1, 11, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if result.Old.ID == result.New.ID {
+		t.Fatalf("expected project id to change, got %q", result.New.ID)
+	}
+	if !strings.HasPrefix(result.New.ID, "new-name-") {
+		t.Fatalf("expected new project id, got %q", result.New.ID)
+	}
+	if _, err := os.Stat(oldStore.Paths.ProjectDir); !os.IsNotExist(err) {
+		t.Fatalf("expected old project dir to move, got %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(diaryRoot, "projects", result.New.ID, "records", "record.md")); err != nil {
+		t.Fatalf("expected record in renamed project dir: %v", err)
+	}
+
+	projectMap, err := ReadProjectMap(diaryRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(projectMap.Projects) != 1 || projectMap.Projects[0].ID != result.New.ID || projectMap.Projects[0].Name != "new-name" {
+		t.Fatalf("expected renamed project map entry, got %#v", projectMap)
+	}
+}

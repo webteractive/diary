@@ -1,80 +1,120 @@
-# Repository Guidelines
+# Diary Agent Instructions
 
-## Project Structure & Module Organization
+Diary is a Go CLI for preserving local AI implementation context across runs. It records compact handoffs as Markdown, retrieves prompt-ready context, lists prior records, migrates old stores, installs harness instructions/skills, and self-updates from GitHub releases.
 
-Diary is a Go CLI. The binary entrypoint lives in `cmd/diary/`, and implementation packages live under `internal/`.
+## Project Shape
 
-Key packages:
+- Binary entrypoint: `cmd/diary/`.
+- CLI commands: `internal/cli/`, one focused file per command where practical.
+- Project/root resolution: `internal/project/`.
+- Storage, records, indexes, and project maps: `internal/storage/`.
+- Content hashing: `internal/hash/`.
+- Markdown/JSON rendering: `internal/render/`.
+- Harness instruction and skill installation: `internal/setup/` and `internal/install/`.
+- GitHub release self-update logic: `internal/update/`.
 
-- `internal/cli` - Cobra commands and command output handling.
-- `internal/project` - project/root resolution.
-- `internal/storage` - `.diary/` paths, Markdown records, indexes, and lookups.
-- `internal/hash` - content hashing helpers.
-- `internal/install` - harness skill installation and templates.
-- `internal/update` - GitHub release self-update logic.
-- `internal/render` - Markdown and JSON rendering.
+Do not reintroduce planning docs under `docs/`. Durable maintainer guidance belongs in this file or `README.md`.
 
-Do not reintroduce planning docs under `docs/`; durable maintainer guidance belongs here or in `README.md`.
+## Core Invariants
 
-## Build, Test, and Development Commands
+- Diary is local-first. Do not add network behavior except where it already exists for `self-update`.
+- Markdown records are the source of truth. `index.json` is a rebuildable cache.
+- New projects use the user-level Diary store by default under `~/.diary/`.
+- Existing project-local `.diary/` stores remain supported for backward compatibility.
+- `projects.json` maps project roots to stable project ids. Preserve that root-based mapping when changing project resolution, rename, list, get, record, or migrate behavior.
+- Project ids must avoid collisions between checkouts with the same directory name.
+- Record ids should remain harness-agnostic.
+- Do not read, record, or commit secrets, credentials, tokens, private keys, or `.env` contents.
 
-```bash
-go test ./...
-```
+## Command Expectations
 
-Runs the full test suite.
-
-```bash
-go run ./cmd/diary --help
-```
-
-Shows CLI help.
-
-```bash
-go build -o bin/diary ./cmd/diary
-```
-
-Builds the local CLI binary.
-
-## Coding Style & Naming Conventions
-
-Use `gofmt` for all Go files. Keep command files focused by command, for example `internal/cli/record.go` and `internal/cli/self_update.go`.
-
-Command names should stay short and intentional:
+Keep command names short and intentional:
 
 - `record`
 - `get`
 - `list`
+- `rename`
 - `init`
 - `migrate`
 - `install-skills`
 - `self-update`
 
-Diary storage must remain local-first under `.diary/`. Markdown records are the source of truth; `index.json` is a rebuildable cache.
+When adding or changing commands:
 
-## Testing Guidelines
+- Wire the command in `internal/cli/root.go`.
+- Add behavior tests in `internal/cli/`.
+- Keep flag names explicit and consistent with existing commands.
+- Preserve `--root` behavior for commands that operate on the user-level store.
+- Avoid creating or mutating `projects.json` from read-only commands such as `get` and `list` unless the command's purpose is to write.
 
-Add or update tests for every behavior change. Current coverage focuses on CLI parsing, project resolution, storage behavior, hashing, skill installation, and self-update behavior.
+## Storage Rules
+
+Use structured storage helpers instead of ad hoc path manipulation when possible:
+
+- `NewPaths`
+- `NewDiaryRootPaths`
+- `ResolveStore`
+- `ResolveStoreForRoot`
+- `ResolveNamedStore`
+- `ReadProjectMap`
+- `ReadRecords`
+- `RebuildIndex`
+
+When moving or copying records:
+
+- Preserve existing Markdown records.
+- Rebuild destination indexes after writes.
+- Do not overwrite existing destination records unless an explicit force option exists.
+- Do not delete source records unless an explicit delete option exists.
+
+For renamed projects, preserve records by root mapping. A rename should update `projects.json` and move the mapped project directory rather than creating a second unrelated project.
+
+## Coding Style
+
+- Use `gofmt` on every touched Go file.
+- Keep package boundaries narrow and boring.
+- Prefer behavior-oriented helpers over clever abstractions.
+- Keep Cobra command files readable: parse flags in the command file, delegate storage behavior to `internal/storage`.
+- Use clear error messages that name the relevant project, root, id, hash, or path.
+
+## Tests
+
+Add or update tests for every behavior change. Current coverage focuses on:
+
+- CLI parsing and command behavior.
+- Project resolution.
+- Storage root selection and project maps.
+- Record creation, parsing, lookup, and indexing.
+- Migration behavior.
+- Skill installation.
+- Self-update behavior.
 
 Prefer behavior-oriented test names such as `TestCreateRecordWritesRecordLatestAndIndex`.
 
-Run `go test ./...` before committing.
+Run the full suite before handing off implementation work:
 
-## Release Guidelines
+```bash
+go test ./...
+```
 
-Releases are tag-driven. Pushing a `v*` tag triggers `.github/workflows/release.yml`, which builds binaries for macOS, Linux, and Windows and publishes a GitHub Release.
+If the sandbox blocks Go's build cache, rerun the same command with the required approval rather than changing cache paths.
 
-Before tagging:
+## Documentation
 
-- Run `go test ./...`.
-- Confirm README install and command examples are still accurate.
-- Avoid retagging an existing version; use the next semver tag.
+After implementing a behavior change, update `README.md` in the same work session so command examples, storage notes, and usage guidance stay current.
 
-## Security & Configuration Tips
+README updates should cover:
 
-Never read or commit `.env` files. Diary should avoid recording secrets by default. New records should use the user-level Diary store by default; existing project `.diary/` stores remain supported for compatibility.
+- New or changed commands and flags.
+- Storage behavior that affects where records live.
+- Migration, rename, or compatibility notes.
+- Install, update, and release instructions when relevant.
 
-When working on `install-skills`, keep generated skills harness-agnostic unless target-specific behavior is strictly required. Current installed skills are:
+## Harness Skills And Instructions
+
+When working on `install-skills`, keep generated skills harness-agnostic unless target-specific behavior is strictly required.
+
+Current installed skills:
 
 - `diary-init`
 - `diary-get`
@@ -83,12 +123,19 @@ When working on `install-skills`, keep generated skills harness-agnostic unless 
 
 `diary-init` should install a short `<diary>...</diary>` instruction block. `diary-record` should preserve the compaction workflow, including files in scope, files out of scope, verification, blockers, and next steps.
 
-## Commit & Pull Request Guidelines
+## Release Guidance
 
-Use concise imperative commit messages, for example:
+Releases are tag-driven. Pushing a `v*` tag triggers `.github/workflows/release.yml`, which builds binaries for macOS, Linux, and Windows and publishes a GitHub Release.
 
-```text
-Improve README usage guide
-```
+Before tagging:
 
-Pull requests should include a summary, testing notes, and any release impact.
+- Run `go test ./...`.
+- Confirm README install and command examples are accurate.
+- Avoid retagging an existing version; use the next semver tag.
+
+## Git And PRs
+
+- Never commit or push unless the user explicitly asks.
+- Never add `Co-Authored-By` to commits.
+- Use concise imperative commit messages, for example `Improve README usage guide`.
+- Pull requests should include a summary, testing notes, and any release impact.

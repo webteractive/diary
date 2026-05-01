@@ -158,6 +158,63 @@ func TestListWithoutProjectDoesNotCreateProjectMapEntry(t *testing.T) {
 	}
 }
 
+func TestRenameUpdatesMappedProject(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	dir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(dir, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	previous, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chdir(previous)
+	})
+
+	var out bytes.Buffer
+	cmd := New(strings.NewReader(""), &out, &bytes.Buffer{})
+	cmd.SetArgs([]string{"record", "--project", "Old Project", "Original context"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	out.Reset()
+	cmd = New(strings.NewReader(""), &out, &bytes.Buffer{})
+	cmd.SetArgs([]string{"rename", "New Project"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if output := out.String(); !strings.Contains(output, "old-project-") || !strings.Contains(output, "new-project-") {
+		t.Fatalf("expected rename output, got %q", output)
+	}
+
+	out.Reset()
+	cmd = New(strings.NewReader(""), &out, &bytes.Buffer{})
+	cmd.SetArgs([]string{"list", "--projects"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if output := out.String(); !strings.Contains(output, "new-project-") || strings.Contains(output, "old-project-") {
+		t.Fatalf("expected renamed project in list, got %q", output)
+	}
+
+	out.Reset()
+	cmd = New(strings.NewReader(""), &out, &bytes.Buffer{})
+	cmd.SetArgs([]string{"get"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "Original context") {
+		t.Fatalf("expected get after rename to find moved record, got %q", out.String())
+	}
+}
+
 func TestRootHelpIncludesBannerAndVersionFlag(t *testing.T) {
 	var out bytes.Buffer
 	cmd := New(strings.NewReader(""), &out, &bytes.Buffer{})

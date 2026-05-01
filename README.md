@@ -68,6 +68,12 @@ List known projects:
 diary list --projects
 ```
 
+Rename the current project's Diary mapping after a project rename:
+
+```bash
+diary rename campaign-builder-api
+```
+
 Initialize a harness reminder:
 
 ```bash
@@ -129,6 +135,17 @@ diary list --root ~/Documents/work-diary
 ```
 
 Use this to discover projects, record ids, and hash prefixes before calling `diary get`.
+
+### `diary rename`
+
+Renames the mapped Diary project for the current checkout. Use this after renaming a repository or changing its configured Diary project name so `diary list --projects` shows the new project id while preserving existing records.
+
+```bash
+diary rename campaign-builder-api
+diary rename campaign-builder-api --root ~/Documents/work-diary
+```
+
+`rename` finds the project by the current checkout root, moves the existing records directory from the old mapped project id to the new one, and updates `projects.json`. It does not rewrite the frontmatter in existing record Markdown files.
 
 ### `diary init`
 
@@ -227,7 +244,7 @@ Diary writes records to a user-level Diary store by default:
         <record-id>.md
 ```
 
-`projects.json` maps project paths to stable project ids so multiple projects with the same directory name do not collide.
+`projects.json` maps project paths to stable project ids so multiple projects with the same directory name do not collide. The id includes the sanitized project name plus a short hash of the root path. If the project is renamed, run `diary rename <new-project-name>` from that checkout to move the stored records to the new id.
 
 If a project already has `.diary/`, Diary keeps using that project-local store for backward compatibility. To write records somewhere else, pass `--root <path>` or set `DIARY_ROOT`. This is useful when you want to keep Diary records in a separate private Git repository:
 

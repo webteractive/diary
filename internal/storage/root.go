@@ -40,6 +40,11 @@ type ProjectEntry struct {
 	LastSeenAt string `json:"last_seen_at"`
 }
 
+type RenameProjectResult struct {
+	Old ProjectEntry
+	New ProjectEntry
+}
+
 func ResolveStore(opts StoreOptions) (Store, error) {
 	if opts.Now.IsZero() {
 		opts.Now = time.Now().UTC()
@@ -164,6 +169,62 @@ func ReadProjectMap(diaryRoot string) (ProjectMap, error) {
 		projectMap.Version = 1
 	}
 	return projectMap, nil
+}
+
+func RenameProject(diaryRoot string, resolution project.Resolution, now time.Time) (RenameProjectResult, error) {
+	if now.IsZero() {
+		now = time.Now().UTC()
+	}
+
+	diaryRoot, err := filepath.Abs(diaryRoot)
+	if err != nil {
+		return RenameProjectResult{}, err
+	}
+	root, err := filepath.Abs(resolution.Root)
+	if err != nil {
+		return RenameProjectResult{}, err
+	}
+
+	projectMap, err := ReadProjectMap(diaryRoot)
+	if err != nil {
+		return RenameProjectResult{}, err
+	}
+
+	for i, entry := range projectMap.Projects {
+		if entry.Root != root {
+			continue
+		}
+
+		oldEntry := entry
+		newEntry := entry
+		newEntry.ID = projectID(resolution.Name, root)
+		newEntry.Name = resolution.Name
+		newEntry.LastSeenAt = now.UTC().Format(time.RFC3339)
+
+		if oldEntry.ID != newEntry.ID {
+			oldPath := NewDiaryRootPaths(diaryRoot, oldEntry.ID).ProjectDir
+			newPath := NewDiaryRootPaths(diaryRoot, newEntry.ID).ProjectDir
+			if existsDir(oldPath) {
+				if existsDir(newPath) {
+					return RenameProjectResult{}, fmt.Errorf("target project already exists: %s", newEntry.ID)
+				}
+				if err := os.Rename(oldPath, newPath); err != nil {
+					return RenameProjectResult{}, err
+				}
+			}
+		}
+
+		projectMap.Projects[i] = newEntry
+		sort.Slice(projectMap.Projects, func(i, j int) bool {
+			return projectMap.Projects[i].ID < projectMap.Projects[j].ID
+		})
+		if err := writeProjectMap(diaryRoot, projectMap); err != nil {
+			return RenameProjectResult{}, err
+		}
+		return RenameProjectResult{Old: oldEntry, New: newEntry}, nil
+	}
+
+	return RenameProjectResult{}, fmt.Errorf("no diary project found for root: %s", root)
 }
 
 func resolveUserStore(diaryRoot string, opts StoreOptions) (Store, error) {
