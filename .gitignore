@@ -1,0 +1,5 @@
+.diary/
+bin/
+dist/
+*.test
+*.out
