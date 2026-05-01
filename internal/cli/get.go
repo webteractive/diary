@@ -26,7 +26,11 @@ func (a app) getCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			store, err := storage.ResolveStore(storage.StoreOptions{
+			resolveStore := storage.ResolveStore
+			if projectName == "" {
+				resolveStore = storage.ResolveStoreForRoot
+			}
+			store, err := resolveStore(storage.StoreOptions{
 				Resolution:   resolved,
 				RootOverride: root,
 			})

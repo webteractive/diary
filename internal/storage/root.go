@@ -65,6 +65,29 @@ func ResolveStore(opts StoreOptions) (Store, error) {
 	return resolveUserStore(diaryRoot, opts)
 }
 
+func ResolveStoreForRoot(opts StoreOptions) (Store, error) {
+	rootOverride := firstNonEmpty(opts.RootOverride, os.Getenv(EnvRoot))
+
+	localPaths := NewPaths(opts.Resolution.Root, opts.Resolution.Name)
+	if rootOverride == "" && existsDir(localPaths.ProjectDir) {
+		return Store{
+			Paths:    localPaths,
+			Location: "project",
+		}, nil
+	}
+
+	diaryRoot := rootOverride
+	if diaryRoot == "" {
+		var err error
+		diaryRoot, err = DefaultRoot()
+		if err != nil {
+			return Store{}, err
+		}
+	}
+
+	return resolveUserStoreForRoot(diaryRoot, opts)
+}
+
 func ResolveNamedStore(name string, resolution project.Resolution, now time.Time) (Store, error) {
 	switch name {
 	case "", "user":
@@ -158,6 +181,38 @@ func resolveUserStore(diaryRoot string, opts StoreOptions) (Store, error) {
 		Paths:    NewDiaryRootPaths(diaryRoot, entry.ID),
 		Location: "user",
 		Entry:    entry,
+	}, nil
+}
+
+func resolveUserStoreForRoot(diaryRoot string, opts StoreOptions) (Store, error) {
+	diaryRoot, err := filepath.Abs(diaryRoot)
+	if err != nil {
+		return Store{}, err
+	}
+
+	root, err := filepath.Abs(opts.Resolution.Root)
+	if err != nil {
+		return Store{}, err
+	}
+
+	projectMap, err := ReadProjectMap(diaryRoot)
+	if err != nil {
+		return Store{}, err
+	}
+
+	for _, entry := range projectMap.Projects {
+		if entry.Root == root {
+			return Store{
+				Paths:    NewDiaryRootPaths(diaryRoot, entry.ID),
+				Location: "user",
+				Entry:    entry,
+			}, nil
+		}
+	}
+
+	return Store{
+		Paths:    NewDiaryRootPaths(diaryRoot, projectID(opts.Resolution.Name, root)),
+		Location: "user",
 	}, nil
 }
 

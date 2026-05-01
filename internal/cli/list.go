@@ -38,7 +38,11 @@ func (a app) listCommand() *cobra.Command {
 				return render.ProjectsMarkdown(a.out, projects)
 			}
 
-			store, err := storage.ResolveStore(storage.StoreOptions{
+			resolveStore := storage.ResolveStore
+			if projectName == "" {
+				resolveStore = storage.ResolveStoreForRoot
+			}
+			store, err := resolveStore(storage.StoreOptions{
 				Resolution:   resolved,
 				RootOverride: root,
 			})
