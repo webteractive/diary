@@ -9,6 +9,7 @@ import (
 
 func TestRecordListAndGet(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("HOME", t.TempDir())
 	previous, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)

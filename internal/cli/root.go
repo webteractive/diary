@@ -29,6 +29,8 @@ func New(in io.Reader, out, errOut io.Writer) *cobra.Command {
 	root.AddCommand(a.recordCommand())
 	root.AddCommand(a.getCommand())
 	root.AddCommand(a.listCommand())
+	root.AddCommand(a.initCommand())
+	root.AddCommand(a.migrateCommand())
 	root.AddCommand(a.installSkillsCommand())
 	root.AddCommand(a.selfUpdateCommand())
 

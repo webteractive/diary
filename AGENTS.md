@@ -45,6 +45,8 @@ Command names should stay short and intentional:
 - `record`
 - `get`
 - `list`
+- `init`
+- `migrate`
 - `install-skills`
 - `self-update`
 
@@ -70,15 +72,16 @@ Before tagging:
 
 ## Security & Configuration Tips
 
-Never read or commit `.env` files. Diary should avoid recording secrets by default. Do not commit `.diary/`; it is local runtime data and ignored by `.gitignore`.
+Never read or commit `.env` files. Diary should avoid recording secrets by default. New records should use the user-level Diary store by default; existing project `.diary/` stores remain supported for compatibility.
 
 When working on `install-skills`, keep generated skills harness-agnostic unless target-specific behavior is strictly required. Current installed skills are:
 
+- `diary-init`
 - `diary-get`
 - `diary-record`
 - `diary-list`
 
-`diary-record` should preserve the compaction workflow, including files in scope, files out of scope, verification, blockers, and next steps.
+`diary-init` should install a short `<diary>...</diary>` instruction block. `diary-record` should preserve the compaction workflow, including files in scope, files out of scope, verification, blockers, and next steps.
 
 ## Commit & Pull Request Guidelines
 

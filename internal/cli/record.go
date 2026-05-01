@@ -18,6 +18,7 @@ func (a app) recordCommand() *cobra.Command {
 	var files []string
 	var refs []string
 	var tags []string
+	var root string
 
 	cmd := &cobra.Command{
 		Use:   "record [message]",
@@ -41,9 +42,17 @@ func (a app) recordCommand() *cobra.Command {
 				return err
 			}
 
+			store, err := storage.ResolveStore(storage.StoreOptions{
+				Resolution:   resolved,
+				RootOverride: root,
+			})
+			if err != nil {
+				return err
+			}
+
 			record, err := storage.CreateRecord(storage.CreateRecordOptions{
-				Root:    resolved.Root,
 				Project: resolved.Name,
+				Paths:   store.Paths,
 				Message: message,
 				Type:    recordType,
 				Harness: harness,
@@ -66,6 +75,7 @@ func (a app) recordCommand() *cobra.Command {
 	cmd.Flags().StringArrayVar(&files, "file", nil, "file reference")
 	cmd.Flags().StringArrayVar(&refs, "ref", nil, "context reference")
 	cmd.Flags().StringArrayVar(&tags, "tag", nil, "tag")
+	cmd.Flags().StringVar(&root, "root", "", "Diary storage root")
 
 	return cmd
 }

@@ -19,6 +19,11 @@ type SkillTemplate struct {
 func Templates() []SkillTemplate {
 	return []SkillTemplate{
 		{
+			Name:        "diary-init",
+			Description: "Install Diary reminder instructions and optional usage skills.",
+			Content:     diaryInitContent(),
+		},
+		{
 			Name:        "diary-get",
 			Description: "Retrieve prior Diary context before starting work.",
 			Content:     diaryGetContent(),
@@ -34,6 +39,33 @@ func Templates() []SkillTemplate {
 			Content:     diaryListContent(),
 		},
 	}
+}
+
+func diaryInitContent() string {
+	return "---\n" +
+		"name: diary-init\n" +
+		"description: Install Diary reminder instructions and optional usage skills.\n" +
+		"---\n\n" +
+		"# Diary Init\n\n" +
+		"Use this when the user wants to set up Diary for an AI harness.\n\n" +
+		"Install the reminder instruction for one harness:\n\n" +
+		"```bash\n" +
+		"diary init --target codex\n" +
+		"diary init --target claude\n" +
+		"```\n\n" +
+		"Install the reminder instruction and Diary usage skills together:\n\n" +
+		"```bash\n" +
+		"diary init --target all --install-skills\n" +
+		"```\n\n" +
+		"Use project scope only when the user wants the instruction committed or kept with the current project:\n\n" +
+		"```bash\n" +
+		"diary init --target codex --scope project\n" +
+		"```\n\n" +
+		"Prefer a dry run before writing global harness instructions:\n\n" +
+		"```bash\n" +
+		"diary init --target all --install-skills --dry-run\n" +
+		"```\n\n" +
+		"Do not edit `.env` files while setting up Diary.\n"
 }
 
 func ValidateTarget(target Target) error {

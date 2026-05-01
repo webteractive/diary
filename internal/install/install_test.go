@@ -19,8 +19,8 @@ func TestInstallDryRunDoesNotWrite(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(results) != 3 {
-		t.Fatalf("expected three results, got %d", len(results))
+	if len(results) != 4 {
+		t.Fatalf("expected four results, got %d", len(results))
 	}
 	if !results[0].DryRun || results[0].Installed {
 		t.Fatalf("expected dry-run result, got %#v", results[0])
@@ -41,7 +41,7 @@ func TestInstallWritesSkill(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(results) != 3 || !results[0].Installed {
+	if len(results) != 4 || !results[0].Installed {
 		t.Fatalf("expected installed result, got %#v", results)
 	}
 
@@ -99,8 +99,8 @@ func TestInstallForceOverwritesExistingFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(results) != 3 {
-		t.Fatalf("expected three results, got %#v", results)
+	if len(results) != 4 {
+		t.Fatalf("expected four results, got %#v", results)
 	}
 	var foundOverwrite bool
 	for _, result := range results {

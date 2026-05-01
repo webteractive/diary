@@ -75,3 +75,24 @@ func TestFindByHashPrefixDetectsAmbiguity(t *testing.T) {
 		t.Fatalf("expected ambiguous hash error, got %v", err)
 	}
 }
+
+func TestCreateRecordCanSeparateStorageIDFromProjectName(t *testing.T) {
+	root := t.TempDir()
+
+	record, err := CreateRecord(CreateRecordOptions{
+		Paths:   NewDiaryRootPaths(root, "diary-12345678"),
+		Project: "diary",
+		Message: "Stored in mapped user project",
+		Now:     time.Date(2026, 5, 1, 10, 30, 0, 0, time.UTC),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if record.Project != "diary" {
+		t.Fatalf("expected display project name, got %q", record.Project)
+	}
+	if !strings.Contains(record.Path, "diary-12345678") {
+		t.Fatalf("expected record path to use storage id, got %q", record.Path)
+	}
+}

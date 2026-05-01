@@ -68,6 +68,19 @@ List known projects:
 diary list --projects
 ```
 
+Initialize a harness reminder:
+
+```bash
+diary init --target codex --install-skills
+```
+
+Migrate old project-local records to the user-level store:
+
+```bash
+diary migrate --from project --to user --dry-run
+diary migrate --from project --to user
+```
+
 ## Commands
 
 ### `diary record`
@@ -78,6 +91,7 @@ Stores implementation context for the current project.
 diary record "Updated install-skills to install diary-get, diary-record, and diary-list."
 diary record --project campaign-builder "Fixed importer validation and added tests."
 diary record --file internal/storage/record.go "Changed record hashing behavior."
+diary record --root ~/Documents/work-diary "Recorded context in a private Diary repo."
 ```
 
 Messages can also come from stdin:
@@ -97,6 +111,7 @@ diary get
 diary get --project campaign-builder
 diary get --id 2026-05-01T103000Z-codex-a7f3c9
 diary get --hash abc123
+diary get --root ~/Documents/work-diary
 diary get --json
 ```
 
@@ -110,9 +125,55 @@ Lists stored Diary inventory without returning full context.
 diary list
 diary list --projects
 diary list --project campaign-builder --json
+diary list --root ~/Documents/work-diary
 ```
 
 Use this to discover projects, record ids, and hash prefixes before calling `diary get`.
+
+### `diary init`
+
+Installs a small Diary instruction for supported harness targets. The instruction reminds the harness to ask whether it should run the `diary-record` skill before ending a meaningful coding session, and to use the Diary CLI from the project directory so Diary can resolve the current project and configured storage location.
+
+```bash
+diary init --target codex
+diary init --target claude
+diary init --target all
+diary init --target all --install-skills
+diary init --target codex --scope project
+diary init --target codex --dry-run
+```
+
+By default, `init` writes global harness instructions:
+
+- Codex: `~/.codex/AGENTS.md`
+- Claude: `~/.claude/CLAUDE.md`
+
+Project-scoped initialization writes to the current project root:
+
+- Codex: `AGENTS.md`
+- Claude: `CLAUDE.md`
+
+Diary-managed instructions are wrapped in a `<diary>...</diary>` block. Existing blocks are not overwritten unless `--force` is supplied. When `--install-skills` is supplied, the Diary skills are installed globally for the selected target.
+
+### `diary migrate`
+
+Migrates records between storage locations for the resolved project.
+
+```bash
+diary migrate --from project --to user --dry-run
+diary migrate --from project --to user
+diary migrate --from user --to project
+diary migrate --from project --to "$HOME/Documents/work-diary"
+diary migrate --from "$HOME/.diary" --to "$HOME/Documents/work-diary"
+```
+
+Storage names:
+
+- `project` - the current project's `.diary/`
+- `user` - the default user-level Diary store
+- any path - a custom Diary root, such as a private Git repository
+
+Migration copies records and rebuilds the destination index. It does not delete the source unless `--delete-source` is supplied. Existing destination records are not overwritten unless `--force` is supplied.
 
 ### `diary install-skills`
 
@@ -127,6 +188,7 @@ diary install-skills --target codex --dry-run
 
 Installed skills:
 
+- `diary-init` - install Diary reminder instructions and optional usage skills
 - `diary-get` - retrieve prior context before work
 - `diary-record` - compact the latest implementation and record it
 - `diary-list` - list available projects and records
@@ -152,16 +214,26 @@ Self-update currently supports macOS and Linux. Windows builds are published, bu
 
 ## Storage
 
-Diary writes local project data under `.diary/`:
+Diary writes records to a user-level Diary store by default:
 
 ```text
-.diary/
+~/.diary/
+  projects.json
   projects/
-    <project>/
+    <project-id>/
       latest.md
       index.json
       records/
         <record-id>.md
+```
+
+`projects.json` maps project paths to stable project ids so multiple projects with the same directory name do not collide.
+
+If a project already has `.diary/`, Diary keeps using that project-local store for backward compatibility. To write records somewhere else, pass `--root <path>` or set `DIARY_ROOT`. This is useful when you want to keep Diary records in a separate private Git repository:
+
+```bash
+DIARY_ROOT="$HOME/Documents/work-diary" diary record "..."
+diary record --root "$HOME/Documents/work-diary" "..."
 ```
 
 Records are Markdown files with YAML frontmatter. Markdown remains the source of truth; `index.json` is a rebuildable lookup cache.
@@ -169,7 +241,7 @@ Records are Markdown files with YAML frontmatter. Markdown remains the source of
 ## Security Notes
 
 - Do not record secrets, credentials, tokens, private keys, or `.env` contents.
-- `.diary/` is ignored by the repository `.gitignore` by default.
+- New projects use the user-level Diary store by default to avoid adding `.diary/` noise to public repositories.
 - Diary is local-first; it does not sync data unless you choose to version or share `.diary/`.
 
 ## Development

@@ -14,10 +14,15 @@ type Paths struct {
 
 func NewPaths(root, project string) Paths {
 	diary := filepath.Join(root, ".diary")
-	projectDir := filepath.Join(diary, "projects", project)
+	return NewDiaryRootPaths(diary, project)
+}
+
+func NewDiaryRootPaths(diaryRoot, project string) Paths {
+	diaryRoot = filepath.Clean(diaryRoot)
+	projectDir := filepath.Join(diaryRoot, "projects", project)
 	return Paths{
-		Root:       root,
-		Diary:      diary,
+		Root:       filepath.Dir(diaryRoot),
+		Diary:      diaryRoot,
 		Project:    project,
 		ProjectDir: projectDir,
 		RecordsDir: filepath.Join(projectDir, "records"),

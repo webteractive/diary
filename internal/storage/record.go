@@ -15,6 +15,7 @@ import (
 type CreateRecordOptions struct {
 	Root    string
 	Project string
+	Paths   Paths
 	Message string
 	Type    string
 	Harness string
@@ -38,14 +39,21 @@ func CreateRecord(opts CreateRecordOptions) (Record, error) {
 		opts.Now = time.Now().UTC()
 	}
 
-	paths := NewPaths(opts.Root, opts.Project)
+	paths := opts.Paths
+	if paths.Project == "" {
+		paths = NewPaths(opts.Root, opts.Project)
+	}
 	if err := os.MkdirAll(paths.RecordsDir, 0o755); err != nil {
 		return Record{}, err
+	}
+	projectName := opts.Project
+	if projectName == "" {
+		projectName = paths.Project
 	}
 
 	record := Record{
 		ID:        makeID(opts.Now, opts.Harness),
-		Project:   opts.Project,
+		Project:   projectName,
 		Type:      opts.Type,
 		Timestamp: opts.Now.UTC().Format(time.RFC3339),
 		Harness:   opts.Harness,

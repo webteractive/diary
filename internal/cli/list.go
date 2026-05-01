@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"os"
 	"path/filepath"
 
 	"diary/internal/project"
@@ -15,6 +16,7 @@ func (a app) listCommand() *cobra.Command {
 	var projectName string
 	var projectsOnly bool
 	var jsonOutput bool
+	var root string
 
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -26,7 +28,7 @@ func (a app) listCommand() *cobra.Command {
 			}
 
 			if projectsOnly {
-				projects, err := storage.Projects(resolved.Root)
+				projects, err := listProjects(resolved, root)
 				if err != nil {
 					return err
 				}
@@ -36,7 +38,14 @@ func (a app) listCommand() *cobra.Command {
 				return render.ProjectsMarkdown(a.out, projects)
 			}
 
-			paths := storage.NewPaths(resolved.Root, resolved.Name)
+			store, err := storage.ResolveStore(storage.StoreOptions{
+				Resolution:   resolved,
+				RootOverride: root,
+			})
+			if err != nil {
+				return err
+			}
+			paths := store.Paths
 			index, err := storage.ReadIndex(paths)
 			if err != nil {
 				if records, readErr := storage.ReadRecords(paths); readErr == nil {
@@ -70,6 +79,25 @@ func (a app) listCommand() *cobra.Command {
 	cmd.Flags().StringVar(&projectName, "project", "", "project name")
 	cmd.Flags().BoolVar(&projectsOnly, "projects", false, "list projects")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "emit JSON")
+	cmd.Flags().StringVar(&root, "root", "", "Diary storage root")
 
 	return cmd
+}
+
+func listProjects(resolved project.Resolution, root string) ([]string, error) {
+	if root != "" {
+		return storage.ProjectsInRoot(root)
+	}
+	if envRoot := os.Getenv(storage.EnvRoot); envRoot != "" {
+		return storage.ProjectsInRoot(envRoot)
+	}
+	if _, err := os.Stat(filepath.Join(resolved.Root, ".diary")); err == nil {
+		return storage.Projects(resolved.Root)
+	}
+
+	defaultRoot, err := storage.DefaultRoot()
+	if err != nil {
+		return nil, err
+	}
+	return storage.ProjectsInRoot(defaultRoot)
 }

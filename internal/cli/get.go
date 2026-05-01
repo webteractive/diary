@@ -16,6 +16,7 @@ func (a app) getCommand() *cobra.Command {
 	var hashPrefix string
 	var jsonOutput bool
 	var maxChars int
+	var root string
 
 	cmd := &cobra.Command{
 		Use:   "get",
@@ -25,7 +26,14 @@ func (a app) getCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			paths := storage.NewPaths(resolved.Root, resolved.Name)
+			store, err := storage.ResolveStore(storage.StoreOptions{
+				Resolution:   resolved,
+				RootOverride: root,
+			})
+			if err != nil {
+				return err
+			}
+			paths := store.Paths
 
 			var record storage.Record
 			switch {
@@ -55,6 +63,7 @@ func (a app) getCommand() *cobra.Command {
 	cmd.Flags().StringVar(&hashPrefix, "hash", "", "record hash prefix")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "emit JSON")
 	cmd.Flags().IntVar(&maxChars, "max-chars", 0, "maximum body characters")
+	cmd.Flags().StringVar(&root, "root", "", "Diary storage root")
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		if id != "" && hashPrefix != "" {
