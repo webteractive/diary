@@ -50,10 +50,10 @@ func ResolveStore(opts StoreOptions) (Store, error) {
 		return resolveUserStore(rootOverride, opts)
 	}
 
-	localDiary := filepath.Join(opts.Resolution.Root, ".diary")
-	if existsDir(localDiary) {
+	localPaths := NewPaths(opts.Resolution.Root, opts.Resolution.Name)
+	if existsDir(localPaths.ProjectDir) {
 		return Store{
-			Paths:    NewPaths(opts.Resolution.Root, opts.Resolution.Name),
+			Paths:    localPaths,
 			Location: "project",
 		}, nil
 	}

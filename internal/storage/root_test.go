@@ -46,7 +46,7 @@ func TestResolveStoreKeepsExistingProjectDiary(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	projectRoot := t.TempDir()
-	if err := os.Mkdir(filepath.Join(projectRoot, ".diary"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(projectRoot, ".diary", "projects", "diary"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -65,6 +65,26 @@ func TestResolveStoreKeepsExistingProjectDiary(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(home, ".diary", "projects.json")); !os.IsNotExist(err) {
 		t.Fatalf("expected no user project map when project .diary exists, got %v", err)
+	}
+}
+
+func TestResolveStoreIgnoresEmptyProjectDiary(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	projectRoot := t.TempDir()
+	if err := os.Mkdir(filepath.Join(projectRoot, ".diary"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	store, err := ResolveStore(StoreOptions{
+		Resolution: project.Resolution{Name: "diary", Root: projectRoot},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if store.Location != "user" {
+		t.Fatalf("expected user store for empty project .diary, got %q", store.Location)
 	}
 }
 
