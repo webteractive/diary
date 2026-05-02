@@ -108,6 +108,8 @@ cat handoff.md | diary record
 
 If `--project` is not supplied, Diary resolves the project from `.diary/config.yml`, the Git root directory, or the current directory name.
 
+After writing the record, `diary record` prints the record id, content hash, and Markdown file path.
+
 ### `diary get`
 
 Retrieves prompt-ready context for the resolved project.

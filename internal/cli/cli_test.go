@@ -31,6 +31,12 @@ func TestRecordListAndGet(t *testing.T) {
 	if !strings.Contains(out.String(), "sha256:") {
 		t.Fatalf("expected record output to include hash, got %q", out.String())
 	}
+	if !strings.Contains(out.String(), string(filepath.Separator)+"records"+string(filepath.Separator)) {
+		t.Fatalf("expected record output to include record path, got %q", out.String())
+	}
+	if !strings.Contains(out.String(), ".md") {
+		t.Fatalf("expected record output to include markdown file path, got %q", out.String())
+	}
 
 	out.Reset()
 	cmd = New(strings.NewReader(""), &out, &bytes.Buffer{})

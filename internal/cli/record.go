@@ -64,7 +64,7 @@ func (a app) recordCommand() *cobra.Command {
 				return err
 			}
 
-			_, err = fmt.Fprintf(a.out, "%s %s\n", record.ID, record.Hash)
+			_, err = fmt.Fprintf(a.out, "%s %s %s\n", record.ID, record.Hash, record.Path)
 			return err
 		},
 	}
